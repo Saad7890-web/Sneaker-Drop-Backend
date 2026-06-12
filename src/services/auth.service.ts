@@ -9,6 +9,7 @@ type AuthUser = {
   id: string;
   username: string;
   email: string;
+  role: "USER" | "ADMIN";
 };
 
 type AuthResult = {
@@ -27,11 +28,13 @@ export const registerUser = async (
         username: input.username,
         email: input.email,
         passwordHash,
+        role: "USER",
       },
       select: {
         id: true,
         username: true,
         email: true,
+        role: true,
       },
     });
 
@@ -39,6 +42,7 @@ export const registerUser = async (
       sub: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
     });
 
     return {
@@ -85,6 +89,7 @@ export const loginUser = async (input: LoginInput): Promise<AuthResult> => {
     sub: user.id,
     username: user.username,
     email: user.email,
+    role: user.role,
   });
 
   return {
@@ -92,6 +97,7 @@ export const loginUser = async (input: LoginInput): Promise<AuthResult> => {
       id: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
     },
     accessToken,
   };
