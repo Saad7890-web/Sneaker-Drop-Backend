@@ -14,6 +14,7 @@ export const errorMiddleware = (
       error: {
         message: err.message,
         code: err.code,
+        ...(err.details !== undefined ? { details: err.details } : {}),
       },
     });
   }
