@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
 import {
+  broadcastPurchaseCompleted,
+  broadcastReservationCreated,
+  broadcastStockUpdated,
+} from "../realtime/broadcaster";
+import {
   completeReservationPurchase,
   reserveDropItem,
 } from "../services/reservation.service";
@@ -26,6 +31,21 @@ export const reserveController = async (req: Request, res: Response) => {
     });
   }
   const result = await reserveDropItem(req.user.id, dropId);
+
+  broadcastReservationCreated({
+    reservationId: result.reservation.id,
+    dropId: result.drop.id,
+    userId: result.reservation.userId,
+    expiresAt: result.reservation.expiresAt.toISOString(),
+    availableStock: result.drop.availableStock,
+    status: result.drop.status,
+  });
+
+  broadcastStockUpdated({
+    dropId: result.drop.id,
+    availableStock: result.drop.availableStock,
+    status: result.drop.status,
+  });
 
   return res.status(201).json({
     success: true,
@@ -55,6 +75,14 @@ export const purchaseController = async (req: Request, res: Response) => {
     });
   }
   const result = await completeReservationPurchase(req.user.id, reservationId);
+
+  broadcastPurchaseCompleted({
+    purchaseId: result.purchase.id,
+    reservationId: result.purchase.reservationId,
+    dropId: result.purchase.dropId,
+    userId: result.purchase.userId,
+    purchasedAt: result.purchase.purchasedAt.toISOString(),
+  });
 
   return res.status(200).json({
     success: true,
