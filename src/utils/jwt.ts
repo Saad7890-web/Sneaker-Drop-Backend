@@ -5,6 +5,7 @@ export type AccessTokenPayload = {
   sub: string;
   username: string;
   email: string;
+  role: "USER" | "ADMIN";
 };
 
 export const signAccessToken = (payload: AccessTokenPayload): string => {

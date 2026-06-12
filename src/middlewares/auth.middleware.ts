@@ -26,6 +26,7 @@ export const requireAuth = (
       id: payload.sub,
       username: payload.username,
       email: payload.email,
+      role: payload.role,
     };
 
     return next();
