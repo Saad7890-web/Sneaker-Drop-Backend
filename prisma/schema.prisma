@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  ENDED
+  SOLD_OUT
+  CANCELLED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  EXPIRED
+  COMPLETED
+  CANCELLED
+}
+
+enum PurchaseStatus {
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id        String       @id @default(cuid())
+  username  String       @unique
+  email     String       @unique
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+  purchases    Purchase[]
+
+  @@map("users")
+}
+
+model Drop {
+  id             String         @id @default(cuid())
+  title          String
+  totalStock     Int            @map("total_stock")
+  availableStock Int            @map("available_stock")
+  status         DropStatus     @default(DRAFT)
+  startsAt       DateTime       @map("starts_at")
+  endsAt         DateTime?      @map("ends_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+  purchases    Purchase[]
+
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@index([status, startsAt])
+  @@map("drops")
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  userId      String            @map("user_id")
+  dropId      String            @map("drop_id")
+  status      ReservationStatus  @default(ACTIVE)
+  reservedAt  DateTime           @default(now()) @map("reserved_at")
+  expiresAt   DateTime           @map("expires_at")
+  completedAt DateTime?          @map("completed_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  drop   Drop @relation(fields: [dropId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchase Purchase?
+
+  @@index([userId])
+  @@index([dropId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([dropId, status])
+  @@index([status, expiresAt])
+  @@index([userId, dropId, status])
+  @@map("reservations")
+}
+
+model Purchase {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  dropId        String         @map("drop_id")
+  reservationId String         @unique @map("reservation_id")
+  status        PurchaseStatus @default(SUCCESS)
+  purchasedAt   DateTime       @default(now()) @map("purchased_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  drop        Drop        @relation(fields: [dropId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([dropId])
+  @@index([purchasedAt])
+  @@index([dropId, purchasedAt])
+  @@index([dropId, status, purchasedAt])
+  @@map("purchases")
+}
