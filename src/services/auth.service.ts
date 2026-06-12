@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
 import prisma from "../config/prisma";
+import { Prisma } from "../generated/prisma/client";
 import { AppError } from "../utils/AppError";
 import { signAccessToken } from "../utils/jwt";
 import { comparePassword, hashPassword } from "../utils/password";

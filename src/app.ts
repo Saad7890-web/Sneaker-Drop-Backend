@@ -7,6 +7,7 @@ import { env } from "./config/env";
 import logger from "./config/logger";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { notFoundMiddleware } from "./middlewares/notFound.middleware";
+import { apiLimiter } from "./middlewares/rateLimit.middleware";
 import apiV1Router from "./routes";
 
 const app = express();
@@ -38,7 +39,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api/v1", apiV1Router);
+app.use("/api/v1", apiLimiter, apiV1Router);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
