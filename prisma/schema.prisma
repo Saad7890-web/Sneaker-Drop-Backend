@@ -12,7 +12,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 enum DropStatus {
   DRAFT
   SCHEDULED
@@ -35,11 +34,11 @@ enum PurchaseStatus {
 }
 
 model User {
-  id        String       @id @default(cuid())
-  username  String       @unique
-  email     String       @unique
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   reservations Reservation[]
   purchases    Purchase[]
@@ -48,15 +47,15 @@ model User {
 }
 
 model Drop {
-  id             String         @id @default(cuid())
+  id             String     @id @default(cuid())
   title          String
-  totalStock     Int            @map("total_stock")
-  availableStock Int            @map("available_stock")
-  status         DropStatus     @default(DRAFT)
-  startsAt       DateTime       @map("starts_at")
-  endsAt         DateTime?      @map("ends_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  totalStock     Int        @map("total_stock")
+  availableStock Int        @map("available_stock")
+  status         DropStatus @default(DRAFT)
+  startsAt       DateTime   @map("starts_at")
+  endsAt         DateTime?  @map("ends_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
 
   reservations Reservation[]
   purchases    Purchase[]
@@ -72,15 +71,15 @@ model Reservation {
   id          String            @id @default(cuid())
   userId      String            @map("user_id")
   dropId      String            @map("drop_id")
-  status      ReservationStatus  @default(ACTIVE)
-  reservedAt  DateTime           @default(now()) @map("reserved_at")
-  expiresAt   DateTime           @map("expires_at")
-  completedAt DateTime?          @map("completed_at")
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
+  status      ReservationStatus @default(ACTIVE)
+  reservedAt  DateTime          @default(now()) @map("reserved_at")
+  expiresAt   DateTime          @map("expires_at")
+  completedAt DateTime?         @map("completed_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  user   User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  drop   Drop @relation(fields: [dropId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  drop     Drop      @relation(fields: [dropId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   purchase Purchase?
 
   @@index([userId])
