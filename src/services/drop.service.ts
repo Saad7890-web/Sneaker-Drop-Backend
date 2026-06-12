@@ -1,4 +1,5 @@
 import prisma from "../config/prisma";
+import { DropStatus } from "../generated/prisma/client";
 import { AppError } from "../utils/AppError";
 
 type CreateDropInput = {
@@ -19,7 +20,8 @@ export const createDrop = async (input: CreateDropInput) => {
     );
   }
 
-  const initialStatus = input.startsAt > now ? "SCHEDULED" : "ACTIVE";
+  const initialStatus =
+    input.startsAt > now ? DropStatus.SCHEDULED : DropStatus.ACTIVE;
 
   return prisma.drop.create({
     data: {

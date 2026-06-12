@@ -1,5 +1,5 @@
 import prisma from "../config/prisma";
-import { ReservationStatus } from "../generated/prisma/client";
+import { DropStatus, ReservationStatus } from "../generated/prisma/client";
 import { lockDropById } from "../repositories/drop.repository";
 import { purchaseExistsByReservationId } from "../repositories/purchase.repository";
 import { lockReservationById } from "../repositories/reservation.repository";
@@ -74,7 +74,9 @@ export const reserveDropItem = async (
         dropId,
         status: ReservationStatus.ACTIVE,
       },
-      select: { id: true },
+      select: {
+        id: true,
+      },
     });
 
     if (activeReservation) {
@@ -86,11 +88,16 @@ export const reserveDropItem = async (
     }
 
     const updatedDrop = await tx.drop.update({
-      where: { id: dropId },
+      where: {
+        id: dropId,
+      },
       data: {
         availableStock: {
           decrement: 1,
         },
+        ...(drop.available_stock - 1 === 0
+          ? { status: DropStatus.SOLD_OUT }
+          : {}),
       },
       select: {
         id: true,
@@ -121,16 +128,6 @@ export const reserveDropItem = async (
         expiresAt: true,
       },
     });
-
-    if (updatedDrop.availableStock === 0) {
-      await tx.drop.update({
-        where: { id: dropId },
-        data: {
-          status: "SOLD_OUT",
-        },
-      });
-      updatedDrop.status = "SOLD_OUT";
-    }
 
     return {
       drop: updatedDrop,
@@ -201,7 +198,9 @@ export const completeReservationPurchase = async (
     const completedAt = new Date();
 
     const completedReservation = await tx.reservation.update({
-      where: { id: reservationId },
+      where: {
+        id: reservationId,
+      },
       data: {
         status: ReservationStatus.COMPLETED,
         completedAt,
@@ -216,76 +215,6 @@ export const completeReservationPurchase = async (
     return {
       purchase,
       reservation: completedReservation,
-    };
-  });
-};
-
-export const expireReservation = async (
-  reservationId: string,
-): Promise<{
-  reservationId: string;
-  dropId: string;
-  restoredStock: 1;
-} | null> => {
-  return prisma.$transaction(async (tx) => {
-    const reservation = await lockReservationById(tx, reservationId);
-
-    if (!reservation) {
-      return null;
-    }
-
-    const now = new Date();
-
-    if (
-      reservation.status !== ReservationStatus.ACTIVE ||
-      reservation.expires_at > now
-    ) {
-      return null;
-    }
-
-    await tx.reservation.update({
-      where: { id: reservationId },
-      data: {
-        status: ReservationStatus.EXPIRED,
-      },
-    });
-
-    const drop = await tx.drop.update({
-      where: { id: reservation.drop_id },
-      data: {
-        availableStock: {
-          increment: 1,
-        },
-      },
-      select: {
-        id: true,
-        availableStock: true,
-        status: true,
-        endsAt: true,
-        startsAt: true,
-      },
-    });
-
-    if (drop.endsAt && drop.endsAt <= now) {
-      await tx.drop.update({
-        where: { id: drop.id },
-        data: {
-          status: "ENDED",
-        },
-      });
-    } else if (drop.availableStock > 0) {
-      await tx.drop.update({
-        where: { id: drop.id },
-        data: {
-          status: "ACTIVE",
-        },
-      });
-    }
-
-    return {
-      reservationId,
-      dropId: reservation.drop_id,
-      restoredStock: 1 as const,
     };
   });
 };
