@@ -21,6 +21,11 @@ enum DropStatus {
   CANCELLED
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 enum ReservationStatus {
   ACTIVE
   EXPIRED
@@ -38,6 +43,7 @@ model User {
   username  String   @unique
   email     String   @unique
   passwordHash String       @map("password_hash")
+  role         UserRole     @default(USER)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
