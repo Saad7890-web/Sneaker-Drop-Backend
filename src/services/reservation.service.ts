@@ -1,5 +1,9 @@
 import prisma from "../config/prisma";
-import { DropStatus, ReservationStatus } from "../generated/prisma/client";
+import {
+  DropStatus,
+  Prisma,
+  ReservationStatus,
+} from "../generated/prisma/client";
 import { lockDropById } from "../repositories/drop.repository";
 import { purchaseExistsByReservationId } from "../repositories/purchase.repository";
 import { lockReservationById } from "../repositories/reservation.repository";
@@ -43,6 +47,14 @@ type PurchaseResult = {
   };
 };
 
+const getDatabaseNow = async (tx: Prisma.TransactionClient): Promise<Date> => {
+  const rows = await tx.$queryRaw<{ now: Date }[]>`
+    SELECT NOW() AS now
+  `;
+
+  return rows[0]?.now ?? new Date();
+};
+
 export const reserveDropItem = async (
   userId: string,
   dropId: string,
@@ -54,13 +66,13 @@ export const reserveDropItem = async (
       throw new AppError("Drop not found", 404, "DROP_NOT_FOUND");
     }
 
-    const now = new Date();
+    const dbNow = await getDatabaseNow(tx);
 
-    if (drop.starts_at > now) {
+    if (drop.starts_at > dbNow) {
       throw new AppError("Drop has not started yet", 409, "DROP_NOT_STARTED");
     }
 
-    if (drop.ends_at && drop.ends_at <= now) {
+    if (drop.ends_at && drop.ends_at <= dbNow) {
       throw new AppError("Drop has ended", 409, "DROP_ENDED");
     }
 
@@ -110,7 +122,7 @@ export const reserveDropItem = async (
       },
     });
 
-    const expiresAt = new Date(now.getTime() + RESERVATION_WINDOW_MS);
+    const expiresAt = new Date(dbNow.getTime() + RESERVATION_WINDOW_MS);
 
     const reservation = await tx.reservation.create({
       data: {
@@ -159,9 +171,9 @@ export const completeReservationPurchase = async (
       );
     }
 
-    const now = new Date();
+    const dbNow = await getDatabaseNow(tx);
 
-    if (reservation.expires_at <= now) {
+    if (reservation.expires_at <= dbNow) {
       throw new AppError("Reservation has expired", 409, "RESERVATION_EXPIRED");
     }
 

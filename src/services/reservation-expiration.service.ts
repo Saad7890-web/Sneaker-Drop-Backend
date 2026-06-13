@@ -26,6 +26,14 @@ export type ExpiredReservationEvent = {
   status: string;
 };
 
+const getDatabaseNow = async (tx: Prisma.TransactionClient): Promise<Date> => {
+  const rows = await tx.$queryRaw<{ now: Date }[]>`
+    SELECT NOW() AS now
+  `;
+
+  return rows[0]?.now ?? new Date();
+};
+
 export const expireDueReservationsBatch = async (
   batchSize = 100,
 ): Promise<ExpiredReservationEvent[]> => {
@@ -44,7 +52,7 @@ export const expireDueReservationsBatch = async (
       return [];
     }
 
-    const now = new Date();
+    const dbNow = await getDatabaseNow(tx);
 
     for (const reservation of dueReservations) {
       await tx.reservation.update({
@@ -92,7 +100,7 @@ export const expireDueReservationsBatch = async (
       const restoredStock = lockedDrop.available_stock + count;
 
       const nextStatus =
-        lockedDrop.ends_at && lockedDrop.ends_at <= now
+        lockedDrop.ends_at && lockedDrop.ends_at <= dbNow
           ? DropStatus.ENDED
           : restoredStock > 0
             ? DropStatus.ACTIVE
@@ -122,7 +130,7 @@ export const expireDueReservationsBatch = async (
           reservationId: reservation.id,
           dropId,
           userId: reservation.user_id,
-          expiredAt: now.toISOString(),
+          expiredAt: dbNow.toISOString(),
           availableStock: updatedDrop.availableStock,
           status: updatedDrop.status,
         });

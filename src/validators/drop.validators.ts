@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+const optionalDate = z.preprocess((value) => {
+  if (value === "" || value === null || value === undefined) {
+    return undefined;
+  }
+  return value;
+}, z.coerce.date().optional());
+
 export const createDropSchema = z
   .object({
     title: z
@@ -13,7 +20,7 @@ export const createDropSchema = z
       .positive("Stock must be a positive integer")
       .max(100000, "Stock is too large"),
     startsAt: z.coerce.date(),
-    endsAt: z.coerce.date().optional(),
+    endsAt: optionalDate,
   })
   .refine((data) => !data.endsAt || data.endsAt > data.startsAt, {
     message: "endsAt must be after startsAt",
