@@ -1,11 +1,11 @@
 import type { RequestHandler } from "express";
-import type { ZodTypeAny, output } from "zod";
+import type { ZodTypeAny } from "zod";
 import { AppError } from "../utils/AppError";
 
 const buildValidator =
   (target: "body" | "params" | "query") =>
   <T extends ZodTypeAny>(schema: T): RequestHandler =>
-  (req, _res, next) => {
+  (req, res, next) => {
     const parsed = schema.safeParse(req[target]);
 
     if (!parsed.success) {
@@ -19,8 +19,9 @@ const buildValidator =
       );
     }
 
-    (req as typeof req & Record<typeof target, output<T>>)[target] =
-      parsed.data;
+    res.locals.validated ??= {};
+    res.locals.validated[target] = parsed.data;
+
     return next();
   };
 
